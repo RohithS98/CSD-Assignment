@@ -1,0 +1,6 @@
+push local 1
+push argument 2
+pop temp 3
+push constant 12
+push pointer 0
+pop pointer 1
