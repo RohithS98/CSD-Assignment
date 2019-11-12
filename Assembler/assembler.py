@@ -133,11 +133,11 @@ def CInstr(line):
                 
         elif line[i] == ';':
             if p != 1 and p != 2 or temp == '':
-                raise SyntaxError
+                raise SyntaxError('Invalid ;')
             else:
                 comp = checkComp(temp)
                 if not comp:
-                    raise SyntaxError
+                    raise SyntaxError('Invalid Operation')
                 p = 3
                 temp = ''
                 
@@ -145,11 +145,11 @@ def CInstr(line):
             if p == 1 or p == 2:
                 comp = checkComp(temp)
                 if not comp:
-                    raise SyntaxError
+                    raise SyntaxError('Invalid Operation')
             elif p == 3:
                 jump = checkJump(temp)
                 if not jump:
-                    raise SyntaxError
+                    raise SyntaxError('Invalid Jump Code')
                 temp = ''
 
         elif line[i] != ' ':
@@ -164,12 +164,11 @@ def translate(code,sym):
     label = re.compile(r"^\(\w*\)$")
     currMem = 16
     for i in code:
-        print(i,' : ',end = '') 
         if i[0] == '@':
             hack.append(AInstr(i,sym))
             print(hack[-1])
         elif label.match(i):
-            print()
+            pass
         else:
             hack.append(CInstr(i))
             print(hack[-1])
