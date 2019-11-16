@@ -1,6 +1,30 @@
+function mult 2
+push constant 0
+pop local 0
+push constant 1
+pop local 1
+label Loop
 push local 1
-push argument 2
-pop temp 3
-push constant 12
-push pointer 0
-pop pointer 1
+push argument 1
+gt
+if-goto END
+push local 0
+push argument 0
+add
+pop local 0
+push local 1
+push constant 1
+add
+pop local 1
+goto LOOP
+label END
+push local 0
+return
+
+function main 0
+push constant 3
+push constant 8
+push constant 5
+call mult 2
+add
+return

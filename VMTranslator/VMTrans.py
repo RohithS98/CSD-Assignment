@@ -81,8 +81,45 @@ def emitGoto(instr):
 def emitIfGo(instr):
     return ['@SP\nAM=M-1\nD=M\n@'+instr[1],'D;JNE']
 
+def emitFunction(instr):
+    code = ['('+instr[1]+')\n@SP\nA=M\n']
+    code.append('M=0\nA=A+1\n'*int(instr[2]))
+    code.append('D=A\n@SP\nM=D\n')
+    return code
+
+#Store current SP in R13; Store return addr, LCL, ARG, THIS, THAT in stack. Store SP - n in ARG
+#Store SP in LCL
+def emitCall(instr):
+    global labelCount
+    code = ['@SP\nD=M\n@R13\nM=D\n@RET'+str(labelCount), 'D=A\n@SP\nA=M\nM=D']
+    code.extend(emitSPAdj(1))
+    for i in ['LCL','ARG','THIS','THAT']:
+        code.append('@'+i+'\nD=M\n@SP\nA=M\nM=D')
+        code.extend(emitSPAdj(1))
+    code.append('@R13\nD=M\n@'+instr[2])
+    code.append('D=D-A\n@ARG\nM=D\n@SP\nD=M\n@LCL\nM=D\n@'+instr[1])
+    code.append('0;JMP\n(RET'+str(labelCount)+')')
+    labelCount += 1
+    return code
+
+def emitReturn(instr):
+    code = ['@LCL\nD=M\n@5\nA=D-A\nD=M\n@R13\nM=D\n@SP\nA=M-1\nD=M\n@ARG\nA=M\nM=D\n']
+    code.append('D=A+1\n@SP\nM=D\n')
+    for i in ['THAT', 'THIS', 'ARG']:
+        code.append('@LCL\nAM=M-1\nD=M\n@'+i+'\nM=D')
+    code.append('@LCL\nA=M-1\nD=M\n@LCL\nM=D\n@R13\nA=M\n0;JMP')
+    return code
+
+def emitStart():
+    return ['@256\nD=A\n@SP\nM=D\n@main\n0;JMP']
+
+def emitEnd():
+    return ['(ENDOFCODE)\n@ENDOFCODE\n0;JMP']
+
 def convert(code,name):
     newCode = []
+    newCode.extend(emitStart())
+    newCode.append('')
     for i in code:
         instr = i.split(' ')
         if instr[0] == 'push' or instr[0] == 'pop':
@@ -99,7 +136,14 @@ def convert(code,name):
             newCode.extend(emitGoto(instr))
         elif instr[0] == 'if-goto':
             newCode.extend(emitIfGo(instr))
+        elif instr[0] == 'function':
+            newCode.extend(emitFunction(instr))
+        elif instr[0] == 'call':
+            newCode.extend(emitCall(instr))
+        elif instr[0] == 'return':
+            newCode.extend(emitReturn(instr))
         newCode.append('')
+    newCode.extend(emitEnd())
     return newCode
         
 
@@ -118,6 +162,7 @@ def translate(f):
     asm = convert(code,name)
     
     nm = '.'.join(f.split('.')[:-1] + ['asm'])
+    print('\n'.join(asm))
     f1 = open(nm,'w')
     f1.write('\n'.join(asm))
     f1.close()
