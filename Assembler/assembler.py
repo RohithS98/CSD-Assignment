@@ -9,7 +9,9 @@ compCode = {'0':'101010', '1':'111111', '-1':"111010", 'D':'001100', 'A':'110000
                         'A-D':'000111', 'M-D':'000111', 'D&A':'000000', 'D&M':'000000', 'D|A':'010101',
                         'D|M':'010101'}
 jumpCode = {'null':'000', 'JGT':'001', 'JEQ':'010', 'JGE':'011', 'JLT':'100', 'JNE':'101', 'JLE':'110', 'JMP':'111'}
-predefVar = {'R0':'0', 'R1':'1', 'R2':'2', 'R3':'3', 'R4':'4', 'R5':'5', 'R6':'6', 'R7':'7', 'R8':'8', 'R9':'9', 'R10':'10', 'R11':'11', 'R12':'12', 'R13':'13', 'R14':'14', 'R15':'15'}
+predefVar = {'R0':'0', 'R1':'1', 'R2':'2', 'R3':'3', 'R4':'4', 'R5':'5', 'R6':'6', 'R7':'7', 'R8':'8', 'R9':'9', 'R10':'10', 
+             'R11':'11', 'R12':'12', 'R13':'13', 'R14':'14', 'R15':'15', 'SCREEN': '16384', 'KBD': '24576', 'SP': '0', 
+             'LCL': '1', 'ARG': '2', 'THIS': '3', 'THAT': '4'}
 
 def validASM_file(f):                             #Function to check the correct file extension 
     if f.split('.')[-1] != 'asm':
@@ -31,7 +33,7 @@ def symbolPass(code):                             #First pass to fill the symbol
     label = re.compile(r"^\(\w*\)$")
     for i in code:
         if i in predefVar:
-            table[i[:][:]] = i[1:] 
+            table[i[:][:]] = predefVar[i]
         elif label.match(i):
             table[i[1:][:-1]] = line
         else:
