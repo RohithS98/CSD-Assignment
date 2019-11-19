@@ -5,7 +5,7 @@ currMem = 16
 compCode = {'0':'101010', '1':'111111', '-1':"111010", 'D':'001100', 'A':'110000', 'M':'110000',
                         '!D':'001101', '!A':'110001', '!M':'110001', '-D':'001111', '-A':'110011', '-M':'110011',
                         'D+1':'011111', 'A+1':'110111', 'M+1':'110111', 'D-1':'001110', 'A-1':'110010',
-                        'M-1':'110010', 'D+A':'000010', 'D+M':'000010', 'D-A':'000010', 'D-M':'000010',
+                        'M-1':'110010', 'D+A':'000010', 'D+M':'000010', 'D-A':'010011', 'D-M':'010011',
                         'A-D':'000111', 'M-D':'000111', 'D&A':'000000', 'D&M':'000000', 'D|A':'010101',
                         'D|M':'010101'}
 jumpCode = {'null':'000', 'JGT':'001', 'JEQ':'010', 'JGE':'011', 'JLT':'100', 'JNE':'101', 'JLE':'110', 'JMP':'111'}
@@ -28,13 +28,11 @@ def clean(code):                                  #Function to remove all kinds 
     return newCode
 
 def symbolPass(code):                             #First pass to fill the symbol table
-    table = dict()
+    table = predefVar
     line = 0
     label = re.compile(r"^\(\w*\)$")
     for i in code:
-        if i in predefVar:
-            table[i[:][:]] = predefVar[i]
-        elif label.match(i):
+        if label.match(i):
             table[i[1:][:-1]] = line
         else:
             line += 1
