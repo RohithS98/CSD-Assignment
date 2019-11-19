@@ -1,0 +1,6 @@
+=0;JMP
+D=;
+AMD
+DMJ=1
+D=JMP
+M=0;JUMP

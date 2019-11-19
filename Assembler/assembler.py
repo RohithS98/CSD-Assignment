@@ -9,13 +9,16 @@ compCode = {'0':'101010', '1':'111111', '-1':"111010", 'D':'001100', 'A':'110000
                         'A-D':'000111', 'M-D':'000111', 'D&A':'000000', 'D&M':'000000', 'D|A':'010101',
                         'D|M':'010101'}
 jumpCode = {'null':'000', 'JGT':'001', 'JEQ':'010', 'JGE':'011', 'JLT':'100', 'JNE':'101', 'JLE':'110', 'JMP':'111'}
+predefVar = {'R0':'0', 'R1':'1', 'R2':'2', 'R3':'3', 'R4':'4', 'R5':'5', 'R6':'6', 'R7':'7', 'R8':'8', 'R9':'9', 'R10':'10', 
+             'R11':'11', 'R12':'12', 'R13':'13', 'R14':'14', 'R15':'15', 'SCREEN': '16384', 'KBD': '24576', 'SP': '0', 
+             'LCL': '1', 'ARG': '2', 'THIS': '3', 'THAT': '4'}
 
-def validASM(f):
+def validASM_file(f):                             #Function to check the correct file extension 
     if f.split('.')[-1] != 'asm':
         return False
     return True
 
-def clean(code):
+def clean(code):                                  #Function to remove all kinds of empty spaces, like new lines and spaces 
     newCode = []
     for i in range(len(code)):
         code[i] = code[i].strip('\n')
@@ -24,12 +27,14 @@ def clean(code):
             newCode.append(code[i])
     return newCode
 
-def symbolPass(code):
+def symbolPass(code):                             #First pass to fill the symbol table
     table = dict()
     line = 0
     label = re.compile(r"^\(\w*\)$")
     for i in code:
-        if label.match(i):
+        if i in predefVar:
+            table[i[:][:]] = predefVar[i]
+        elif label.match(i):
             table[i[1:][:-1]] = line
         else:
             line += 1
@@ -38,7 +43,7 @@ def symbolPass(code):
 def get15Bin(num):
     return ('0'*15 + bin(int(num))[2:])[-15:]
 
-def AInstr(line,sym):
+def AInstr(line,sym):                             #Function to translate the A instruction
     global currMem
     hackIn = '0'
     tempLine = line[1:]
@@ -82,8 +87,10 @@ def checkComp(temp):
         return None
 
 def checkJump(temp):
-    if temp.strip(' ') in ['','JGT','JEQ','JGE','JLT','JNE','JLE','JMP']:
+    if temp.strip(' ') in ['JGT','JEQ','JGE','JLT','JNE','JLE','JMP']:
         return temp.strip(' ')
+    if temp.strip(' ') == '':
+        return 'null'
     return None
 
 def destCode(dest):
@@ -118,7 +125,7 @@ def CInstr(line):
 
     i = 0
     p = 1
-    temp = ''
+    temp = ''                                           #To keep parts of the C instruction for translation
     while i <len(line):
         
         if line[i] == '=':
@@ -175,7 +182,7 @@ def translate(code,sym):
     return hack
 
 def assemble(f):
-    if not validASM(f):
+    if not validASM_file(f):
         print("Invalid file extension")
         return
     f1 = open(f,'r')
@@ -183,9 +190,9 @@ def assemble(f):
     f1.close()
     code = clean(code)
     #print(code)
-    romSym = symbolPass(code)
-    #print(romSym)
-    hack = translate(code,romSym)
+    translationTable = symbolPass(code)
+    #print(translationTable)
+    hack = translate(code,translationTable)
     nm = '.'.join(f.split('.')[:-1] + ['hack'])
     f1 = open(nm,'w')
     f1.write('\n'.join(hack))
