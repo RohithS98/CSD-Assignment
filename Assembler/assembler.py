@@ -22,6 +22,7 @@ def clean(code):                                  #Function to remove all kinds 
     newCode = []
     for i in range(len(code)):
         code[i] = code[i].strip('\n')
+        code[i] = code[i].strip('\t')
         code[i] = code[i].strip(' ')
         if code[i] and not (code[i][0] == '/' and code[i][1] == '/'):
             newCode.append(code[i])
@@ -149,6 +150,7 @@ def CInstr(line):
         elif line[i] == '\n':
             if p == 1 or p == 2:
                 comp = checkComp(temp)
+                #print(temp)
                 if not comp:
                     raise SyntaxError('Invalid Operation')
             elif p == 3:
