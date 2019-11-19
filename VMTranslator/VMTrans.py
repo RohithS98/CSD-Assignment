@@ -6,6 +6,7 @@ loc = {'local':'LCL', 'argument':'ARG', 'this':'THIS', 'that':'THAT'}
 instruction = {'add':'M=D+M', 'sub':'M=D-M', 'and':'M=D&M', 'or':'M=D|M'}
 cond = {'gt':'GT', 'eq':'EQ', 'lt':'LT'}
 jumpCode = {'gt':'JGT', 'eq':'JEQ', 'lt':'JLT'}
+noError = True
 
 def validVM(f):
     if f.split('.')[-1] != 'vm':
@@ -29,7 +30,8 @@ def getAddr(instr):
         return ['@'+loc[instr[1]],'D=M','@'+instr[2],'D=D+A']
     return ['@'+str(int(instr[2])+5),'D=A']
 
-def emitMemInst(instr,name):
+def emitMemInst(instr,name,ln):
+    global noError
     code = []
     if instr[0] == 'pop':
         code.extend(emitSPAdj(-1))
@@ -59,7 +61,9 @@ def emitMemInst(instr,name):
             code.extend(['@'+name+'.'+instr[2]+'\nD=M\n@SP\nA=M\nM=D'])
             code.extend(emitSPAdj(1))
         return code
-    raise SyntaxError('Invalid Memory Access : '+ ' '.join(instr))
+    print('Invalid Memory Access in line '+str(ln)+' : '+' '.join(instr))
+    noError = False
+    return []
 
 def emitBinInst(instr):
     return ['@SP\nAM=M-1\nD=M\nA=A-1', instruction[instr[0]]]
@@ -118,53 +122,76 @@ def emitEnd():
     return ['(ENDOFCODE)\n@ENDOFCODE\n0;JMP']
 
 def convert(code,name):
+    global noError
     newCode = []
     newCode.extend(emitStart())
     newCode.append('')
+    ln = 1
     for i in code:
         instr = i.split(' ')
         if instr[0] == 'push' or instr[0] == 'pop':
         	if len(instr) != 3:
-        		raise SyntaxError('Invalid number of arguments for '+instr[0])
-        	newCode.extend(emitMemInst(instr,name))
+        		print('Invalid number of arguments for '+instr[0]+' in line '+str(ln)+' : '+i)
+        		noError = False
+        	else:
+        		newCode.extend(emitMemInst(instr,name,ln))
         elif instr[0] in ['add','sub','and','or']:
         	if len(instr) != 1:
-        		raise SyntaxError('Too many arguments for '+instr[0])
-        	newCode.extend(emitBinInst(instr))
+        		print('Too many arguments for '+instr[0]+' in line '+str(ln)+' : '+i)
+        		noError = False
+        	else:
+        		newCode.extend(emitBinInst(instr))
         elif instr[0] in ['neg','not']:
         	if len(instr) != 1:
-        		raise SyntaxError('Too many arguments for '+instr[0])
-        	newCode.extend(emitUnInst(instr))
+        		print('Too many arguments for '+instr[0]+' in line '+str(ln)+' : '+i)
+        		noError = False
+        	else:
+        		newCode.extend(emitUnInst(instr))
         elif instr[0] in ['eq','gt','lt']:
         	if len(instr) != 1:
-        		raise SyntaxError('Too many arguments for '+instr[0])
-        	newCode.extend(emitComp(instr))
+        		print('Too many arguments for '+instr[0]+' in line '+str(ln)+' : '+i)
+        		noError = False
+        	else:
+        		newCode.extend(emitComp(instr))
         elif instr[0] == 'label':
         	if len(instr) != 2:
-        		raise SyntaxError('Invalid number of arguments for '+instr[0])
-        	newCode.append('('+instr[1]+')')
+        		print('Invalid number of arguments for '+instr[0]+' in line '+str(ln)+' : '+i)
+        		noError = False
+        	else:
+        		newCode.append('('+instr[1]+')')
         elif instr[0] == 'goto':
         	if len(instr) != 2:
-        		raise SyntaxError('Invalid number of arguments for '+instr[0])
-        	newCode.extend(emitGoto(instr))
+        		print('Invalid number of arguments for '+instr[0]+' in line '+str(ln)+' : '+i)
+        		noError = False
+        	else:
+        		newCode.extend(emitGoto(instr))
         elif instr[0] == 'if-goto':
         	if len(instr) != 2:
-        		raise SyntaxError('Invalid number of arguments for '+instr[0])
-        	newCode.extend(emitIfGo(instr))
+        		print('Invalid number of arguments for '+instr[0]+' in line '+str(ln)+' : '+i)
+        		noError = False
+        	else:
+        		newCode.extend(emitIfGo(instr))
         elif instr[0] == 'function':
         	if len(instr) != 3:
-        		raise SyntaxError('Invalid number of arguments for '+instr[0])
-        	newCode.extend(emitFunction(instr))
+        		print('Invalid number of arguments for '+instr[0]+' in line '+str(ln)+' : '+i)
+        		noError = False
+        	else:
+        		newCode.extend(emitFunction(instr))
         elif instr[0] == 'call':
         	if len(instr) != 3:
-        		raise SyntaxError('Invalid number of arguments for '+instr[0])
-        	newCode.extend(emitCall(instr))
+        		print('Invalid number of arguments for '+instr[0]+' in line '+str(ln)+' : '+i)
+        		noError = False
+        	else:
+        		newCode.extend(emitCall(instr))
         elif instr[0] == 'return':
         	if len(instr) != 1:
-        		raise SyntaxError('Too many arguments for '+instr[0])
-        	newCode.extend(emitReturn(instr))
+        		print('Too many arguments for '+instr[0]+' in line '+str(ln)+' : '+i)
+        		noError = False
+        	else:
+        		newCode.extend(emitReturn(instr))
         else:
-        	raise SyntaxError('Invalid Instruction : '+i)
+        	print('Invalid Instruction at line '+str(ln)+' : '+i)
+        	noError = False
         newCode.append('')
     newCode.extend(emitEnd())
     return newCode
@@ -183,12 +210,14 @@ def translate(f):
     code = clean(code)
 
     asm = convert(code,name)
-    
-    nm = '.'.join(f.split('.')[:-1] + ['asm'])
-    print('\n'.join(asm))
-    f1 = open(nm,'w')
-    f1.write('\n'.join(asm))
-    f1.close()
+    if noError:
+    	nm = '.'.join(f.split('.')[:-1] + ['asm'])
+    	print('\n'.join(asm))
+    	f1 = open(nm,'w')
+    	f1.write('\n'.join(asm))
+    	f1.close()
+    else:
+    	print("\nNo assembly generated due to errors")
 
 fname = input("Enter File Name(.vm): ").strip()
 translate(fname)
