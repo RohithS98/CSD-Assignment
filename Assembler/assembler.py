@@ -87,8 +87,10 @@ def checkComp(temp):
         return None
 
 def checkJump(temp):
-    if temp.strip(' ') in ['','JGT','JEQ','JGE','JLT','JNE','JLE','JMP']:
+    if temp.strip(' ') in ['JGT','JEQ','JGE','JLT','JNE','JLE','JMP']:
         return temp.strip(' ')
+    if temp.strip(' ') == '':
+        return 'null'
     return None
 
 def destCode(dest):
