@@ -59,6 +59,7 @@ def emitMemInst(instr,name):
             code.extend(['@'+name+'.'+instr[2]+'\nD=M\n@SP\nA=M\nM=D'])
             code.extend(emitSPAdj(1))
         return code
+    raise SyntaxError('Invalid Memory Access : '+ ' '.join(instr))
 
 def emitBinInst(instr):
     return ['@SP\nAM=M-1\nD=M\nA=A-1', instruction[instr[0]]]
@@ -82,21 +83,21 @@ def emitIfGo(instr):
     return ['@SP\nAM=M-1\nD=M\n@'+instr[1],'D;JNE']
 
 def emitFunction(instr):
-    code = ['('+instr[1]+')\n@SP\nA=M\n']
-    code.append('M=0\nA=A+1\n'*int(instr[2]))
-    code.append('D=A\n@SP\nM=D\n')
+    code = ['('+instr[1]+')\n@SP\nA=M']
+    code.append('M=0\nA=A+1\n'*(int(instr[2])-1)+'M=0\nA=A+1')
+    code.append('D=A\n@SP\nM=D')
     return code
 
-#Store current SP in R13; Store return addr, LCL, ARG, THIS, THAT in stack. Store SP - n in ARG
+#Store return addr, LCL, ARG, THIS, THAT in stack. Store SP - 5 - n in ARG
 #Store SP in LCL
 def emitCall(instr):
     global labelCount
-    code = ['@SP\nD=M\n@R13\nM=D\n@RET'+str(labelCount), 'D=A\n@SP\nA=M\nM=D']
+    code = ['@RET'+str(labelCount), 'D=A\n@SP\nA=M\nM=D']
     code.extend(emitSPAdj(1))
     for i in ['LCL','ARG','THIS','THAT']:
         code.append('@'+i+'\nD=M\n@SP\nA=M\nM=D')
         code.extend(emitSPAdj(1))
-    code.append('@R13\nD=M\n@'+instr[2])
+    code.append('@SP\nD=M\n@'+str(int(instr[2])+5))
     code.append('D=D-A\n@ARG\nM=D\n@SP\nD=M\n@LCL\nM=D\n@'+instr[1])
     code.append('0;JMP\n(RET'+str(labelCount)+')')
     labelCount += 1
@@ -123,25 +124,47 @@ def convert(code,name):
     for i in code:
         instr = i.split(' ')
         if instr[0] == 'push' or instr[0] == 'pop':
-            newCode.extend(emitMemInst(instr,name))
+        	if len(instr) != 3:
+        		raise SyntaxError('Invalid number of arguments for '+instr[0])
+        	newCode.extend(emitMemInst(instr,name))
         elif instr[0] in ['add','sub','and','or']:
-            newCode.extend(emitBinInst(instr))
+        	if len(instr) != 1:
+        		raise SyntaxError('Too many arguments for '+instr[0])
+        	newCode.extend(emitBinInst(instr))
         elif instr[0] in ['neg','not']:
-            newCode.extend(emitUnInst(instr))
+        	if len(instr) != 1:
+        		raise SyntaxError('Too many arguments for '+instr[0])
+        	newCode.extend(emitUnInst(instr))
         elif instr[0] in ['eq','gt','lt']:
-            newCode.extend(emitComp(instr))
+        	if len(instr) != 1:
+        		raise SyntaxError('Too many arguments for '+instr[0])
+        	newCode.extend(emitComp(instr))
         elif instr[0] == 'label':
-            newCode.append('('+instr[1]+')')
+        	if len(instr) != 2:
+        		raise SyntaxError('Invalid number of arguments for '+instr[0])
+        	newCode.append('('+instr[1]+')')
         elif instr[0] == 'goto':
-            newCode.extend(emitGoto(instr))
+        	if len(instr) != 2:
+        		raise SyntaxError('Invalid number of arguments for '+instr[0])
+        	newCode.extend(emitGoto(instr))
         elif instr[0] == 'if-goto':
-            newCode.extend(emitIfGo(instr))
+        	if len(instr) != 2:
+        		raise SyntaxError('Invalid number of arguments for '+instr[0])
+        	newCode.extend(emitIfGo(instr))
         elif instr[0] == 'function':
-            newCode.extend(emitFunction(instr))
+        	if len(instr) != 3:
+        		raise SyntaxError('Invalid number of arguments for '+instr[0])
+        	newCode.extend(emitFunction(instr))
         elif instr[0] == 'call':
-            newCode.extend(emitCall(instr))
+        	if len(instr) != 3:
+        		raise SyntaxError('Invalid number of arguments for '+instr[0])
+        	newCode.extend(emitCall(instr))
         elif instr[0] == 'return':
-            newCode.extend(emitReturn(instr))
+        	if len(instr) != 1:
+        		raise SyntaxError('Too many arguments for '+instr[0])
+        	newCode.extend(emitReturn(instr))
+        else:
+        	raise SyntaxError('Invalid Instruction : '+i)
         newCode.append('')
     newCode.extend(emitEnd())
     return newCode

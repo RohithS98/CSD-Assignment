@@ -1,0 +1,14 @@
+push local 1
+push argument 2
+push this 0
+push that 4
+push temp 6
+push constant 23
+push static 6
+pop local 2
+pop argument 3
+pop this 4
+pop that 5
+pop temp 1
+pop constant 9
+pop static 2

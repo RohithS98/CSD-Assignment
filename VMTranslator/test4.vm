@@ -1,0 +1,7 @@
+push loc 2
+pop local 2 3
+pop
+gt 2
+return 2
+call hello
+hello
