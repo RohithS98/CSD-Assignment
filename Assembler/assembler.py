@@ -34,7 +34,7 @@ def symbolPass(code):                             #First pass to fill the symbol
     label = re.compile(r"^\(\w*\)$")
     for i in code:
         if label.match(i):
-            table[i[1:][:-1]] = line
+            table[i[1:-1]] = line
         else:
             line += 1
     return table
