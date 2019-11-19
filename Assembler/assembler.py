@@ -12,6 +12,7 @@ jumpCode = {'null':'000', 'JGT':'001', 'JEQ':'010', 'JGE':'011', 'JLT':'100', 'J
 predefVar = {'R0':'0', 'R1':'1', 'R2':'2', 'R3':'3', 'R4':'4', 'R5':'5', 'R6':'6', 'R7':'7', 'R8':'8', 'R9':'9', 'R10':'10', 
              'R11':'11', 'R12':'12', 'R13':'13', 'R14':'14', 'R15':'15', 'SCREEN': '16384', 'KBD': '24576', 'SP': '0', 
              'LCL': '1', 'ARG': '2', 'THIS': '3', 'THAT': '4'}
+noError = True
 
 def validASM_file(f):                             #Function to check the correct file extension 
     if f.split('.')[-1] != 'asm':
@@ -42,7 +43,7 @@ def symbolPass(code):                             #First pass to fill the symbol
 def get15Bin(num):
     return ('0'*15 + bin(int(num))[2:])[-15:]
 
-def AInstr(line,sym):                             #Function to translate the A instruction
+def AInstr(line,sym,ln):                             #Function to translate the A instruction
     global currMem
     hackIn = '0'
     tempLine = line[1:]
@@ -116,7 +117,8 @@ def getC(dest,comp,jump):
     return hackIn
     
 
-def CInstr(line):
+def CInstr(line, ln):
+    global noError
     dest = 'null'
     comp = ''
     jump = 'null'
@@ -129,21 +131,29 @@ def CInstr(line):
         
         if line[i] == '=':
             if p != 1 or temp == '':
-                raise SyntaxError("Invalid =")
+            	print('Invalid = in line number '+str(ln)+' : '+line)
+            	noError = False
+            	return ''
             else:
                 dest = checkDest(temp)
                 if not dest:
-                    raise SyntaxError("Invalid Destination "+temp)
+                    print('Invalid destination '+temp+' in line number '+str(ln)+' : '+line)
+                    noError = False
+                    return ''
                 p = 2
                 temp = ''
                 
         elif line[i] == ';':
             if p != 1 and p != 2 or temp == '':
-                raise SyntaxError('Invalid ;')
+                print('Invalid ; in line number '+str(ln)+' : '+line)
+                noError = False
+                return ''
             else:
                 comp = checkComp(temp)
                 if not comp:
-                    raise SyntaxError('Invalid Operation')
+                    print('Invalid operation '+temp+' in line number '+str(ln)+' : '+line)
+                    noError = False
+                    return ''
                 p = 3
                 temp = ''
                 
@@ -152,11 +162,15 @@ def CInstr(line):
                 comp = checkComp(temp)
                 #print(temp)
                 if not comp:
-                    raise SyntaxError('Invalid Operation')
+                    print('Invalid operation '+temp+' in line number '+str(ln)+' : '+line)
+                    noError = False
+                    return ''
             elif p == 3:
                 jump = checkJump(temp)
                 if not jump:
-                    raise SyntaxError('Invalid Jump Code')
+                    print('Invalid jump '+temp+' in line number '+str(ln)+' : '+line)
+                    noError = False
+                    return ''
                 temp = ''
 
         elif line[i] != ' ':
@@ -170,15 +184,20 @@ def translate(code,sym):
     hack = []
     label = re.compile(r"^\(\w*\)$")
     currMem = 16
+    ln = 1
     for i in code:
         if i[0] == '@':
-            hack.append(AInstr(i,sym))
-            print(hack[-1])
+            hack.append(AInstr(i,sym,ln))
+            if hack[-1]:
+            	print(i,hack[-1])
+            ln += 1
         elif label.match(i):
             pass
         else:
-            hack.append(CInstr(i))
-            print(hack[-1])
+            hack.append(CInstr(i,ln))
+            if hack[-1]:
+            	print(i,hack[-1])
+            ln += 1
     return hack
 
 def assemble(f):
@@ -193,10 +212,13 @@ def assemble(f):
     translationTable = symbolPass(code)
     #print(translationTable)
     hack = translate(code,translationTable)
-    nm = '.'.join(f.split('.')[:-1] + ['hack'])
-    f1 = open(nm,'w')
-    f1.write('\n'.join(hack))
-    f1.close()
+    if noError:
+    	nm = '.'.join(f.split('.')[:-1] + ['hack'])
+    	f1 = open(nm,'w')
+    	f1.write('\n'.join(hack))
+    	f1.close()
+    else:
+    	print("No hack generated due to errors")
 
 fname = input("Enter File Name(.asm): ").strip()
 assemble(fname)

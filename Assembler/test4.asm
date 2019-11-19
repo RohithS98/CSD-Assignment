@@ -1,6 +1,9 @@
+//A=D+2
 =0;JMP
-D=;
+D=A+D=;
 AMD
+lok
+lok
 DMJ=1
 D=JMP
 M=0;JUMP
